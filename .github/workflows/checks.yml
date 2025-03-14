@@ -1,0 +1,38 @@
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        status:
+          - queued
+          - in_progress
+          - completed
+          - waiting
+          - requested
+          - pending
+        conclusion:
+          - action_required
+          - cancelled
+          - failure
+          - neutral
+          - success
+          - skipped
+          - stale
+          - timed_out
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.APP_ID }}
+          private-key: ${{ secrets.PRIVATE_KEY }}
+      - run: |
+          gh api --method POST /repos/${{ github.repository }}/check-runs \
+          -f "name=${{ matrix.status }}/${{ matrix. }}" \
+          -f "head_sha=${{ github.sha }}" \
+          -f "status=${{ matrix.status }}" \
+          -f "conclusion=${{ matrix.conclusion }}"
+        with:
+          token: ${{ steps.app-token.outputs.token }}
