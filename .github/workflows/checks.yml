@@ -11,9 +11,10 @@ jobs:
           - queued
           - in_progress
           - completed
-          - waiting
-          - requested
-          - pending
+          # Only GitHub Actions can set a status of waiting, pending, or requested.
+          # - waiting
+          # - requested
+          # - pending
         conclusion:
           - action_required
           - cancelled
