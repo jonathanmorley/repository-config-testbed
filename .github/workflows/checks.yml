@@ -6,6 +6,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
+        # From https://docs.github.com/en/rest/checks/runs?apiVersion=2022-11-28
         status:
           - queued
           - in_progress
@@ -20,7 +21,7 @@ jobs:
           - neutral
           - success
           - skipped
-          - stale
+          # - stale # You cannot change a check run conclusion to stale, only GitHub can set this.
           - timed_out
     steps:
       - uses: actions/create-github-app-token@v1
