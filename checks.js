@@ -28,11 +28,64 @@ console.log(main);
 
 for (const status of statuses) {
   for (const conclusion of conclusions) {
-    await octokit.rest.git.createRef({
+    const ref = `refs/heads/checks/${status}/${conclusion}`;
+
+    let branchExists;
+    try {
+      const { data: branch } = await octokit.rest.repos.getBranch({
+        owner: 'jonathanmorley',
+        repo: 'repository-config-testbed',
+        branch: `checks/${status}/${conclusion}`
+      });
+      branchExists = true;
+    } catch (error) {
+      if (error instanceof Octokit.HttpError && error.status === 404)
+        branchExists = false;
+      throw error;
+    }
+    
+    if (!branchExists) {
+      await octokit.rest.git.createRef({
+        owner: 'jonathanmorley',
+        repo: 'repository-config-testbed',
+        ref,
+        sha: main.object.sha
+      });
+    }
+
+    await octokit.rest.repos.createRepoRuleset({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
-      ref: `refs/heads/checks/${status}/${conclusion}`,
-      sha: main.object.sha
+      name: `Checks ${status} ${conclusion}`,
+      target: 'branch',
+      enforcement: 'active',
+      conditions: {
+        ref_name: {
+          include: [ref],
+          exclude: []
+        }
+      },
+      rules: [
+        {
+          type: 'required_status_checks',
+          parameters: {
+            strict_required_status_checks_policy: false,
+            do_not_enforce_on_create: false,
+            required_status_checks: [
+              {
+                context: `${status}/${conclusion}`,
+                integration_id: 1178750
+              }
+            ]
+          }
+        }
+      ],
+      bypass_actors: [
+        {
+          actor_id: 5,
+          actor_type: 'RepositoryRole',
+        }
+      ]
     });
   }
 }
