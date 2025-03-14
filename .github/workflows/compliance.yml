@@ -1,7 +1,7 @@
 # This is a placeholder workflow.
 # Use a tag reference to call the real workflow
 
-name: 'Checks'
+name: 'Compliance'
 
 on:
   workflow_call:
