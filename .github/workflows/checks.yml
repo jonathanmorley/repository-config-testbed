@@ -30,9 +30,9 @@ jobs:
           private-key: ${{ secrets.PRIVATE_KEY }}
       - run: |
           gh api --method POST /repos/${{ github.repository }}/check-runs \
-          -f "name=${{ matrix.status }}/${{ matrix. }}" \
-          -f "head_sha=${{ github.sha }}" \
-          -f "status=${{ matrix.status }}" \
-          -f "conclusion=${{ matrix.conclusion }}"
+            -f "name=${{ matrix.status }}/${{ matrix.conclusion }}" \
+            -f "head_sha=${{ github.sha }}" \
+            -f "status=${{ matrix.status }}" \
+            -f "conclusion=${{ matrix.conclusion }}"
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
