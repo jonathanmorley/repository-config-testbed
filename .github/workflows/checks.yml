@@ -26,8 +26,8 @@ jobs:
       - uses: actions/create-github-app-token@v1
         id: app-token
         with:
-          app-id: ${{ vars.APP_ID }}
-          private-key: ${{ secrets.PRIVATE_KEY }}
+          app-id: ${{ vars.REPOSITORY_CONFIG_TESTER_APP_ID }}
+          private-key: ${{ secrets.REPOSITORY_CONFIG_TESTER_PRIVATE_KEY }}
       - run: |
           gh api --method POST /repos/${{ github.repository }}/check-runs \
             -f "name=${{ matrix.status }}/${{ matrix.conclusion }}" \
