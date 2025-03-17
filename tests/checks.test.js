@@ -3,6 +3,7 @@ import { beforeAll, describe, test } from "vitest";
 import _ from 'lodash';
 import 'lodash.product';
 import { createAppAuth } from "@octokit/auth-app";
+import { setTimeout } from 'node:timers/promises';
 
 const octokit = new Octokit({
   authStrategy: createAppAuth,
@@ -117,6 +118,9 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
         ref: `heads/${branch.name}`
       });
     }
+
+    // Wait 5s for branch to be deleted
+    await setTimeout(5_000);
   }, 90_000);
 
   // Setup
