@@ -62,7 +62,7 @@ describe.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, c
     for (const branchType of ['main', 'feature']) {
       const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/${branchType}`);
       if (branch) {
-        console.log(`Deleting branch checks/${status}/${conclusion}/${branchType}`);
+        console.log(`Deleting branch ${branch.name}`);
         await octokit.rest.git.deleteRef({
           owner: 'jonathanmorley',
           repo: 'repository-config-testbed',
