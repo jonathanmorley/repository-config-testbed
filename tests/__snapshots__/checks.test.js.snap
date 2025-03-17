@@ -1,0 +1,11 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`Check completed, skipped > PR mergeability is correct 1`] = `"allowed"`;
+
+exports[`Check completed, success > PR mergeability is correct 1`] = `"allowed"`;
+
+exports[`Check completed, timed_out > PR mergeability is correct 1`] = `"blocked"`;
+
+exports[`Check queued, action_required > PR mergeability is correct 1`] = `"blocked"`;
+
+exports[`Check queued, timed_out > PR mergeability is correct 1`] = `"blocked"`;
