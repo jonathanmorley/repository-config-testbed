@@ -60,6 +60,7 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
   beforeAll(async ({ }) => {
     // Delete any branches
     for (const branchType of ['main', 'feature']) {
+      console.log(`Deleting branch checks/${status}/${conclusion}/${branchType}`);
       const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/${branchType}`);
       if (branch) {
         await octokit.rest.git.deleteRef({
