@@ -58,17 +58,6 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
 
   // Cleanup
   beforeAll(async ({ }) => {
-    // Delete any existing rulesets
-    const ruleset = rulesets.find(ruleset => ruleset.name === `Checks ${status} ${conclusion}`);
-    if (ruleset) {
-      console.log(`Deleting ruleset ${ruleset.id} for ${status} ${conclusion}`);
-      await octokit.rest.repos.deleteRepoRuleset({
-        owner: 'jonathanmorley',
-        repo: 'repository-config-testbed',
-        ruleset_id: ruleset.id
-      });
-    }
-
     // Delete any branches
     for (const branchType of ['main', 'feature']) {
       const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/${branchType}`);
@@ -86,8 +75,8 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
 
   // Setup
   beforeAll(async () => {
-    // Create ruleset
-    await octokit.rest.repos.createRepoRuleset({
+    // Upsert ruleset
+    const ruleset = {
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
       name: `Checks ${status} ${conclusion}`,
@@ -113,8 +102,12 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
             ]
           }
         }
-        ]
-    });
+      ]
+    };
+
+    const rulesetId = rulesets.find(r => r.name === ruleset.name)?.id;
+    if (rulesetId) await octokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
+    else await octokit.rest.repos.createRepoRuleset(ruleset);
   
     // Create branches
     for (const branchType of ['main', 'feature']) {
