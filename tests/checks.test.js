@@ -53,7 +53,7 @@ const branches = await octokit.paginate(octokit.rest.repos.listBranches, {
   repo: 'repository-config-testbed'
 });
 
-describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, conclusion]) => {
+describe.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, conclusion]) => {
   let pullRequest;
 
   // Cleanup
