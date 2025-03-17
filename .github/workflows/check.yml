@@ -1,0 +1,20 @@
+on:
+  push:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/create-github-app-token@v1
+        id: app-token
+        with:
+          app-id: ${{ vars.REPOSITORY_CONFIG_TESTER_APP_ID }}
+          private-key: ${{ secrets.REPOSITORY_CONFIG_TESTER_PRIVATE_KEY }}
+      - run: |
+          gh api --method POST /repos/${{ github.repository }}/check-runs \
+            -f "name=in_progress/timed_out" \
+            -f "head_sha=${{ github.sha }}" \
+            -f "status=in_progress" \
+            -f "conclusion=timed_out"
+        env:
+          GITHUB_TOKEN: ${{ steps.app-token.outputs.token }}
