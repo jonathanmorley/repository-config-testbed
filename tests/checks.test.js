@@ -61,6 +61,7 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
     // Delete any existing rulesets
     const ruleset = rulesets.find(ruleset => ruleset.name === `Checks ${status} ${conclusion}`);
     if (ruleset) {
+      console.log(`Deleting ruleset ${ruleset.id} for ${status} ${conclusion}`);
       await octokit.rest.repos.deleteRepoRuleset({
         owner: 'jonathanmorley',
         repo: 'repository-config-testbed',
