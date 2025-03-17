@@ -1,15 +1,23 @@
-import { Octokit } from "octokit";
-import { Eta } from "eta"
+import { Octokit, RequestError } from "octokit";
 import { beforeAll, describe, test } from "vitest";
 import _ from 'lodash';
 import 'lodash.product';
+import { createAppAuth } from "@octokit/auth-app";
 
-const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
-const eta = new Eta({ views: "templates" });
+const octokit = new Octokit({
+  authStrategy: createAppAuth,
+  auth: {
+    appId: 1178750,
+    privateKey: process.env.GITHUB_APP_PRIVATE_KEY,
+    installationId: 62652949
+  }
+});
+
+console.log(await octokit.rest.apps.getAuthenticated());
 
 const statuses = [
-  // 'queued',
-  // 'in_progress',
+  'queued',
+  'in_progress',
   'completed',
   // Only GitHub Actions can set a status of waiting, pending, or requested.
   // 'waiting',
@@ -18,10 +26,10 @@ const statuses = [
 ];
 
 const conclusions = [
-  // 'action_required',
-  // 'cancelled',
-  // 'failure',
-  // 'neutral',
+  'action_required',
+  'cancelled',
+  'failure',
+  'neutral',
   'success',
   'skipped',
   // You cannot change a check run conclusion to stale, only GitHub can set this.
@@ -35,13 +43,6 @@ const { data: main } = await octokit.rest.git.getRef({
   ref: 'heads/main'
 });
 
-const { data: checkFile } = await octokit.rest.repos.getContent({
-  owner: 'jonathanmorley',
-  repo: 'repository-config-testbed',
-  path: '.github/workflows/checks.yml',
-  ref: 'main'
-});
-
 const rulesets = await octokit.paginate(octokit.rest.repos.getRepoRulesets, {
   owner: 'jonathanmorley',
   repo: 'repository-config-testbed',
@@ -53,25 +54,69 @@ const branches = await octokit.paginate(octokit.rest.repos.listBranches, {
   repo: 'repository-config-testbed'
 });
 
-describe.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, conclusion]) => {
-  let pullRequest;
+let featureBranchSha;
 
+// Ensure feature branch
+beforeAll(async () => {
+  const { data: mainTree } = await octokit.rest.git.getTree({
+    owner: 'jonathanmorley',
+    repo: 'repository-config-testbed',
+    tree_sha: main.object.sha
+  });
+
+  const { data: tree } = await octokit.rest.git.createTree({
+    owner: 'jonathanmorley',
+    repo: 'repository-config-testbed',
+    base_tree: mainTree.sha,
+    tree: [
+      {
+        path: 'test_file',
+        content: Buffer.from('Hello World!').toString('base64'),
+        mode: '100644',
+      }
+    ]
+  });
+
+  const { data: commit } = await octokit.rest.git.createCommit({
+    owner: 'jonathanmorley',
+    repo: 'repository-config-testbed',
+    message: 'Create feature branch',
+    tree: tree.sha,
+    parents: [main.object.sha]
+  });
+
+  if (branches.find(branch => branch.name === 'checks/feature')) {
+    await octokit.rest.git.updateRef({
+      owner: 'jonathanmorley',
+      repo: 'repository-config-testbed',
+      ref: 'heads/checks/feature',
+      sha: commit.sha,
+      force: true
+    })
+  } else {
+    await octokit.rest.git.createRef({
+      owner: 'jonathanmorley',
+      repo: 'repository-config-testbed',
+      ref: 'refs/heads/checks/feature',
+      sha: commit.sha
+    });
+  }
+
+  featureBranchSha = commit.sha;
+})
+
+describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, conclusion]) => {
   // Cleanup
   beforeAll(async ({ }) => {
-    // Delete any branches
-    for (const branchType of ['main', 'feature']) {
-      const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/${branchType}`);
-      if (branch) {
-        console.log(`Deleting branch ${branch.name}`);
-        await octokit.rest.git.deleteRef({
-          owner: 'jonathanmorley',
-          repo: 'repository-config-testbed',
-          ref: `heads/${branch.name}`
-        });
-      }
+    // Delete branch
+    const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/main`);
+    if (branch) {
+      await octokit.rest.git.deleteRef({
+        owner: 'jonathanmorley',
+        repo: 'repository-config-testbed',
+        ref: `heads/${branch.name}`
+      });
     }
-
-    // Deleting branches will close open PRs
   }, 90_000);
 
   // Setup
@@ -110,69 +155,41 @@ describe.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, c
     if (rulesetId) await octokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
     else await octokit.rest.repos.createRepoRuleset(ruleset);
   
-    // Create branches
-    for (const branchType of ['main', 'feature']) {
-      await octokit.rest.git.createRef({
-        owner: 'jonathanmorley',
-        repo: 'repository-config-testbed',
-        ref: `refs/heads/checks/${status}/${conclusion}/${branchType}`,
-        sha: main.object.sha
-      });
-    }
-  
-    // push action to feature branch
-    const action = eta.render("./check", { status, conclusion });
-    await octokit.rest.repos.createOrUpdateFileContents({
+    // Create branch
+    await octokit.rest.git.createRef({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
-      path: '.github/workflows/check.yml',
-      content: Buffer.from(action).toString('base64'),
-      message: 'Add check action',
-      branch: `checks/${status}/${conclusion}/feature`,
-      sha: checkFile.sha
-    });
-  
-    // Create Pull Request
-    const {data: pull } = await octokit.rest.pulls.create({
-      owner: 'jonathanmorley',
-      repo: 'repository-config-testbed',
-      base: `checks/${status}/${conclusion}/main`,
-      head: `checks/${status}/${conclusion}/feature`,
-      title: `Test ${status} ${conclusion}`
+      ref: `refs/heads/checks/${status}/${conclusion}/main`,
+      sha: main.object.sha
     });
 
-    pullRequest = pull;
-
+    // Create check on feature branch
     await octokit.rest.checks.create({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
-      head_sha: pull.head.sha,
+      head_sha: featureBranchSha,
       name: `${status}/${conclusion}`,
       status,
       conclusion
     });
   }, 40_000);
 
-  // Wait for check
-  test('Check run is created', { retry: 20 }, async ({ expect }) => {
-    console.log(`Checking PR ${pullRequest.number} for check ${status}/${conclusion}`);
+  test('force update the branch', async ({ expect }) => {
+    let result = 'success';
+    
+    try {
+      await octokit.rest.git.updateRef({
+        owner: 'jonathanmorley',
+        repo: 'repository-config-testbed',
+        ref: `heads/checks/${status}/${conclusion}/main`,
+        sha: featureBranchSha,
+        force: true
+      });
+    } catch (err) {
+      expect(err).toBeInstanceOf(RequestError);
+      if (err instanceof RequestError) result = err.message;
+    }
 
-    const { data: checks } = await octokit.rest.checks.listForRef({
-      owner: 'jonathanmorley',
-      repo: 'repository-config-testbed',
-      ref: pullRequest.head.sha
-    });
-
-    expect(checks.total_count).toBeGreaterThan(0);
-  });
-
-  test('PR mergeability is correct', { retry: 10 }, async ({ expect }) => {
-    const { data: pull } = await octokit.rest.pulls.get({
-      owner: 'jonathanmorley',
-      repo: 'repository-config-testbed',
-      pull_number: pullRequest.number
-    });
-
-    expect(pull.mergeable_state).toMatchSnapshot();
+    expect(result).toMatchSnapshot();
   });
 });

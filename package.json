@@ -11,7 +11,7 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "eta": "^3.5.0",
+    "@octokit/auth-app": "^7.1.5",
     "lodash": "^4.17.21",
     "lodash.product": "^18.10.0",
     "octokit": "^4.1.2",

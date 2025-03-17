@@ -8,6 +8,9 @@ importers:
 
   .:
     dependencies:
+      '@octokit/auth-app':
+        specifier: ^7.1.5
+        version: 7.1.5
       eta:
         specifier: ^3.5.0
         version: 3.5.0
