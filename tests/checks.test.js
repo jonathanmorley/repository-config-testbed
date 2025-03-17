@@ -3,7 +3,6 @@ import { Eta } from "eta"
 import { beforeAll, describe, test } from "vitest";
 import _ from 'lodash';
 import 'lodash.product';
-import { setTimeout } from "timers/promises";
 
 const octokit = new Octokit({ auth: process.env.GITHUB_TOKEN });
 const eta = new Eta({ views: "templates" });
@@ -43,18 +42,23 @@ const { data: checkFile } = await octokit.rest.repos.getContent({
   ref: 'main'
 });
 
+const rulesets = await octokit.paginate(octokit.rest.repos.getRepoRulesets, {
+  owner: 'jonathanmorley',
+  repo: 'repository-config-testbed',
+  includes_parents: false
+});
+
+const branches = await octokit.paginate(octokit.rest.repos.listBranches, {
+  owner: 'jonathanmorley',
+  repo: 'repository-config-testbed'
+});
+
 describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, conclusion]) => {
   let pullRequest;
 
   // Cleanup
   beforeAll(async ({ }) => {
     // Delete any existing rulesets
-    const rulesets = await octokit.paginate(octokit.rest.repos.getRepoRulesets, {
-      owner: 'jonathanmorley',
-      repo: 'repository-config-testbed',
-      includes_parents: false
-    });
-    
     const ruleset = rulesets.find(ruleset => ruleset.name === `Checks ${status} ${conclusion}`);
     if (ruleset) {
       await octokit.rest.repos.deleteRepoRuleset({
@@ -65,11 +69,6 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
     }
 
     // Delete any branches
-    const branches = await octokit.paginate(octokit.rest.repos.listBranches, {
-      owner: 'jonathanmorley',
-      repo: 'repository-config-testbed'
-    });
-
     for (const branchType of ['main', 'feature']) {
       const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/${branchType}`);
       if (branch) {
