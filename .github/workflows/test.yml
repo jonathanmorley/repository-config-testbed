@@ -15,6 +15,6 @@ jobs:
         with:
           app-id: ${{ vars.REPOSITORY_CONFIG_TESTER_APP_ID }}
           private-key: ${{ secrets.REPOSITORY_CONFIG_TESTER_PRIVATE_KEY }}
-      - run: vitest run
+      - run: pnpm vitest run
         env:
           GITHUB_TOKEN: ${{ steps.app-token.outputs.github_token }}
