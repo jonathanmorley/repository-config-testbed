@@ -5,7 +5,7 @@ import 'lodash.product';
 import { createAppAuth } from "@octokit/auth-app";
 import { setTimeout } from 'node:timers/promises';
 
-const octokit = new Octokit({
+const apptokit = new Octokit({
   authStrategy: createAppAuth,
   auth: {
     appId: 1178750,
@@ -14,7 +14,9 @@ const octokit = new Octokit({
   }
 });
 
-console.log(await octokit.rest.apps.getAuthenticated());
+const tokentokit = new Octokit({
+  auth: process.env.GITHUB_TOKEN
+});
 
 const statuses = [
   'queued',
@@ -24,7 +26,7 @@ const statuses = [
   // 'waiting',
   // 'requested',
   // 'pending',
-];
+] as const;
 
 const conclusions = [
   'action_required',
@@ -36,36 +38,38 @@ const conclusions = [
   // You cannot change a check run conclusion to stale, only GitHub can set this.
   // 'stale', 
   'timed_out',
-];
+] as const;
 
-const { data: main } = await octokit.rest.git.getRef({
+const matrix = _.product(statuses, conclusions) as [typeof statuses[number], typeof conclusions[number]][];
+
+const { data: main } = await tokentokit.rest.git.getRef({
   owner: 'jonathanmorley',
   repo: 'repository-config-testbed',
   ref: 'heads/main'
 });
 
-const rulesets = await octokit.paginate(octokit.rest.repos.getRepoRulesets, {
+const rulesets = await tokentokit.paginate(tokentokit.rest.repos.getRepoRulesets, {
   owner: 'jonathanmorley',
   repo: 'repository-config-testbed',
   includes_parents: false
 });
 
-const branches = await octokit.paginate(octokit.rest.repos.listBranches, {
+const branches = await tokentokit.paginate(tokentokit.rest.repos.listBranches, {
   owner: 'jonathanmorley',
   repo: 'repository-config-testbed'
 });
 
-let featureBranchSha;
+let featureBranchSha: string;
 
 // Ensure feature branch
 beforeAll(async () => {
-  const { data: mainTree } = await octokit.rest.git.getTree({
+  const { data: mainTree } = await tokentokit.rest.git.getTree({
     owner: 'jonathanmorley',
     repo: 'repository-config-testbed',
     tree_sha: main.object.sha
   });
 
-  const { data: tree } = await octokit.rest.git.createTree({
+  const { data: tree } = await tokentokit.rest.git.createTree({
     owner: 'jonathanmorley',
     repo: 'repository-config-testbed',
     base_tree: mainTree.sha,
@@ -78,7 +82,7 @@ beforeAll(async () => {
     ]
   });
 
-  const { data: commit } = await octokit.rest.git.createCommit({
+  const { data: commit } = await tokentokit.rest.git.createCommit({
     owner: 'jonathanmorley',
     repo: 'repository-config-testbed',
     message: 'Create feature branch',
@@ -87,7 +91,7 @@ beforeAll(async () => {
   });
 
   if (branches.find(branch => branch.name === 'checks/feature')) {
-    await octokit.rest.git.updateRef({
+    await tokentokit.rest.git.updateRef({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
       ref: 'heads/checks/feature',
@@ -95,7 +99,7 @@ beforeAll(async () => {
       force: true
     })
   } else {
-    await octokit.rest.git.createRef({
+    await tokentokit.rest.git.createRef({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
       ref: 'refs/heads/checks/feature',
@@ -104,15 +108,15 @@ beforeAll(async () => {
   }
 
   featureBranchSha = commit.sha;
-})
+});
 
-describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async ([status, conclusion]) => {
+describe.concurrent.for(matrix)('Check %s, %s', async ([status, conclusion]) => {
   // Cleanup
   beforeAll(async ({ }) => {
     // Delete branch
     const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/main`);
     if (branch) {
-      await octokit.rest.git.deleteRef({
+      await tokentokit.rest.git.deleteRef({
         owner: 'jonathanmorley',
         repo: 'repository-config-testbed',
         ref: `heads/${branch.name}`
@@ -153,14 +157,14 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
           }
         }
       ]
-    };
+    } satisfies Parameters<Octokit['rest']['repos']['createRepoRuleset']>[0];
 
     const rulesetId = rulesets.find(r => r.name === ruleset.name)?.id;
-    if (rulesetId) await octokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
-    else await octokit.rest.repos.createRepoRuleset(ruleset);
+    if (rulesetId) await tokentokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
+    else await tokentokit.rest.repos.createRepoRuleset(ruleset);
   
     // Create branch
-    await octokit.rest.git.createRef({
+    await tokentokit.rest.git.createRef({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
       ref: `refs/heads/checks/${status}/${conclusion}/main`,
@@ -168,7 +172,7 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
     });
 
     // Create check on feature branch
-    await octokit.rest.checks.create({
+    await apptokit.rest.checks.create({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
       head_sha: featureBranchSha,
@@ -182,7 +186,7 @@ describe.concurrent.for(_.product(statuses, conclusions))('Check %s, %s', async 
     let result = 'success';
     
     try {
-      await octokit.rest.git.updateRef({
+      await tokentokit.rest.git.updateRef({
         owner: 'jonathanmorley',
         repo: 'repository-config-testbed',
         ref: `heads/checks/${status}/${conclusion}/main`,
