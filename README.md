@@ -20,7 +20,7 @@ Based on the [test snapshots](./tests/__snapshots__/checks.test.ts.snap), we can
 
 This tests the effect of the `pull_request` ruleset parameters.
 
-Based on the [test snapshots](./tests/__snapshots__checks.test.ts.snap), we can see that:
+Based on the [test snapshots](./tests/__snapshots__/checks.test.ts.snap), we can see that:
 
 - With either of `dismiss_stale_reviews_on_push` and `require_last_push_approval` set, commits that change the diff of the PR will invalidate prior approvals.
 - With `require_last_push_approval` set, users cannot 'sneak in' changes, by pushing to a pull request, then approving that pull request.
