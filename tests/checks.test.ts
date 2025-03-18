@@ -116,7 +116,7 @@ describe.concurrent.for(matrix)('Check %s, %s', async ([status, conclusion]) => 
     // Delete branch
     const branch = branches.find(branch => branch.name === `checks/${status}/${conclusion}/main`);
     if (branch) {
-      await tokentokit.rest.git.deleteRef({
+      await apptokit.rest.git.deleteRef({
         owner: 'jonathanmorley',
         repo: 'repository-config-testbed',
         ref: `heads/${branch.name}`

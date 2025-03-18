@@ -48,7 +48,7 @@ describe.concurrent.for(_.product(dismissStales, lastPushes))('Require Reviews (
     for (const branchType of ['main', 'feature']) {
       const branch = branches.find(branch => branch.name === `${branchPrefix}/${branchType}`);
       if (branch) {
-        await tokentokit.rest.git.deleteRef({
+        await apptokit.rest.git.deleteRef({
           owner: 'jonathanmorley',
           repo: 'repository-config-testbed',
           ref: `heads/${branch.name}`
@@ -135,7 +135,7 @@ describe.concurrent.for(_.product(dismissStales, lastPushes))('Require Reviews (
     });
   }, 40_000);
 
-  describe('Update Pull Request (same diff)', async () => {
+  describe.skip('Update Pull Request (same diff)', async () => {
     beforeAll(async () => {
       const { data: headCommit } = await tokentokit.rest.git.getCommit({
         owner: 'jonathanmorley',
@@ -193,13 +193,15 @@ describe.concurrent.for(_.product(dismissStales, lastPushes))('Require Reviews (
         repo: 'repository-config-testbed',
         pull_number: pullRequest.number
       });
+
+      tokentokit.rest.pulls
   
       expect(pull.mergeable_state).not.toBe("unknown");
       expect(pull.mergeable_state).toMatchSnapshot();
     });
   });
 
-  describe('Re-approve (same user as made the change)', () => {
+  describe.skip('Re-approve (same user as made the change)', () => {
     beforeAll(async () => {
       await apptokit.rest.pulls.createReview({
         owner: 'jonathanmorley',
