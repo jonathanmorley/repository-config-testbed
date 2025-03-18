@@ -160,8 +160,8 @@ describe.concurrent.for(matrix)('Check %s, %s', async ([status, conclusion]) => 
     } satisfies Parameters<Octokit['rest']['repos']['createRepoRuleset']>[0];
 
     const rulesetId = rulesets.find(r => r.name === ruleset.name)?.id;
-    if (rulesetId) await tokentokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
-    else await tokentokit.rest.repos.createRepoRuleset(ruleset);
+    if (rulesetId) await apptokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
+    else await apptokit.rest.repos.createRepoRuleset(ruleset);
   
     // Create branch
     await tokentokit.rest.git.createRef({

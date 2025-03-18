@@ -92,8 +92,8 @@ describe.concurrent.for(_.product(dismissStales, lastPushes))('Require Reviews (
     } satisfies Parameters<Octokit['rest']['repos']['createRepoRuleset']>[0];
 
     const rulesetId = rulesets.find(r => r.name === ruleset.name)?.id;
-    if (rulesetId) await tokentokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
-    else await tokentokit.rest.repos.createRepoRuleset(ruleset);
+    if (rulesetId) await apptokit.rest.repos.updateRepoRuleset({ ...ruleset, ruleset_id: rulesetId });
+    else await apptokit.rest.repos.createRepoRuleset(ruleset);
   
     // Create branches
     for (const branchType of ['main', 'feature']) {
@@ -126,7 +126,7 @@ describe.concurrent.for(_.product(dismissStales, lastPushes))('Require Reviews (
 
     pullRequest = pull;
 
-    // Approve PR
+    // Approve PR (by app)
     await apptokit.rest.pulls.createReview({
       owner: 'jonathanmorley',
       repo: 'repository-config-testbed',
@@ -175,13 +175,37 @@ describe.concurrent.for(_.product(dismissStales, lastPushes))('Require Reviews (
 
   describe('Update Pull Request (changed diff)', async () => {
     beforeAll(async () => {
-      await tokentokit.rest.repos.createOrUpdateFileContents({
+      await apptokit.rest.repos.createOrUpdateFileContents({
         owner: 'jonathanmorley',
         repo: 'repository-config-testbed',
         path: 'test_file_2',
         message: 'Change feature branch',
         content: Buffer.from('Hello World!').toString('base64'),
         branch: `${branchPrefix}/feature`
+      });
+    });
+
+    test('Pull Request mergeability', { retry: 5 }, async ({ expect }) => {
+      onTestFailed(async () => await setTimeout(5_000));
+      
+      const { data: pull } = await tokentokit.rest.pulls.get({
+        owner: 'jonathanmorley',
+        repo: 'repository-config-testbed',
+        pull_number: pullRequest.number
+      });
+  
+      expect(pull.mergeable_state).not.toBe("unknown");
+      expect(pull.mergeable_state).toMatchSnapshot();
+    });
+  });
+
+  describe('Re-approve (same user as made the change)', () => {
+    beforeAll(async () => {
+      await apptokit.rest.pulls.createReview({
+        owner: 'jonathanmorley',
+        repo: 'repository-config-testbed',
+        pull_number: pullRequest.number,
+        event: 'APPROVE'
       });
     });
 
