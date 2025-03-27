@@ -1,1 +1,1 @@
-{"on":["pull_request"],"jobs":{"placeholder":{"runs-on":"ubuntu-latest","steps":[{"uses":"actions/checkout@v4"},{"run":"git rev-parse HEAD"},{"run":"echo \"Hello World\""}]}}}
+{"on":["pull_request_target"],"jobs":{"placeholder":{"runs-on":"ubuntu-latest","steps":[{"uses":"actions/checkout@v4"},{"run":"git rev-parse HEAD"},{"run":"echo \"Malicious Input\""}]}}}
