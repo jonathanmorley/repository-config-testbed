@@ -1,0 +1,1 @@
+{"on":["pull_request"],"jobs":{"placeholder":{"runs-on":"ubuntu-latest","steps":[{"uses":"actions/checkout@v4"},{"run":"echo \"Hello World\""},{"run":"git symbolic-ref --short HEAD 2>&1 || true"},{"run":"git rev-parse --abbrev-ref HEAD 2>&1 || true"},{"run":"git branch --show-current 2>&1 || true"},{"run":"git for-each-ref --points-at HEAD 'refs/**/*' 2>&1 || true"}]}}}
