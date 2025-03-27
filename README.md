@@ -25,6 +25,22 @@ Based on the [test snapshots](./tests/__snapshots__/reviews.test.ts.snap), we ca
 - With either of `dismiss_stale_reviews_on_push` and `require_last_push_approval` set, commits that change the diff of the PR will invalidate prior approvals.
 - With `require_last_push_approval` set, users cannot 'sneak in' changes, by pushing to a pull request, then approving that pull request.
 
+### Workflows
+
+This tests the workflows that get triggered by Pull Requests.
+
+Based on the [test snapshots](./tests/__snapshots__/workflows.test.ts.snap), we can see that:
+
+- If there isn't a triggering workflow on the base branch, and the head branch contains a workflow with `pull_request_target`, then the workflow will not run.
+- If the head branch doesn't contain a triggering workflow, then the workflow will not run.
+- If the base branch contains a workflow with `pull_request`, and the head branch changes that to `pull_request_target`, then the workflow will not run (this was unexpected).
+- The workflow will be sourced from the base branch when the workflow has `pull_request_target` in the base AND head branches of the pull request.
+- Otherwise, the workflow will run, and be sourced from the head branch:
+  - A new workflow with `pull_request`
+  - From `pull_request` to `pull_request`
+  - From `pull_request_target` to `pull_request`
+  - From a workflow with an unrelated trigger (`workflow_dispatch`) to `pull_request`
+
 ## Running Locally
 
 Some tests require multiple users (e.g. to open and approve PRs), some tests require GitHub apps (e.g. to send status checks).
