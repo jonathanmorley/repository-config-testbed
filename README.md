@@ -24,3 +24,13 @@ Based on the [test snapshots](./tests/__snapshots__/reviews.test.ts.snap), we ca
 
 - With either of `dismiss_stale_reviews_on_push` and `require_last_push_approval` set, commits that change the diff of the PR will invalidate prior approvals.
 - With `require_last_push_approval` set, users cannot 'sneak in' changes, by pushing to a pull request, then approving that pull request.
+
+## Running Locally
+
+Some tests require multiple users (e.g. to open and approve PRs), some tests require GitHub apps (e.g. to send status checks).
+
+To run the app locally, use the following command:
+
+```
+GITHUB_APP_PRIVATE_KEY=$(cat ~/Downloads/repository-config-tester.2025-03-14.private-key.pem) GITHUB_TOKEN=$(gh auth token --user=jonathanmorley) pnpm vitest run
+```

@@ -5,7 +5,7 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "vitest run"
   },
   "keywords": [],
   "author": "",
@@ -15,11 +15,15 @@
     "lodash": "^4.17.21",
     "lodash.product": "^18.10.0",
     "octokit": "^4.1.2",
-    "vitest": "^3.0.9"
+    "unzipper": "^0.12.3",
+    "vitest": "^3.0.9",
+    "yauzl": "^3.2.0"
   },
   "devDependencies": {
     "@types/lodash": "^4.17.16",
     "@types/node": "^22.13.10",
+    "@types/unzipper": "^0.10.11",
+    "@types/yauzl": "^2.10.3",
     "typescript": "^5.8.2"
   }
 }

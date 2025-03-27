@@ -43,7 +43,7 @@ describe.concurrent.for(_.product(dismissStales, lastPushes))('Require Reviews (
   let pullRequest: Awaited<ReturnType<Octokit['rest']['pulls']['get']>>['data'];
 
   // Cleanup
-  beforeAll(async ({ }) => {
+  beforeAll(async () => {
     // Delete branches
     for (const branchType of ['main', 'feature']) {
       const branch = branches.find(branch => branch.name === `${branchPrefix}/${branchType}`);
